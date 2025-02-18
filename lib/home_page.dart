@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ffi';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +10,6 @@ import 'package:pacman/ghost3.dart';
 import 'package:pacman/path.dart';
 import 'package:pacman/pixel.dart';
 import 'package:pacman/player.dart';
-import 'package:flutter/rendering.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,16 +28,16 @@ class _HomePageState extends State<HomePage> {
   List<int> food = [];
   bool preGame = true;
   bool isMouthClosed = false;
-  static bool reset = false;
+  // static bool reset = false;
   int score = 0;
-  var controller;
+  // var controller;
   bool isPaused = false;
   AudioPlayer advancedPlayer = AudioPlayer();
   AudioPlayer advancedPlayer2 = AudioPlayer();
-  AudioCache audioInGame = AudioCache(prefix: 'assets/');
-  AudioCache audioManch = AudioCache(prefix: 'assets/');
-  AudioCache audioDeath = AudioCache(prefix: 'assets/');
-  AudioCache audioPaused = AudioCache(prefix: 'assets/');
+  // AudioCache audioInGame = AudioCache(prefix: 'assets/');
+  // AudioCache audioManch = AudioCache(prefix: 'assets/');
+  // AudioCache audioDeath = AudioCache(prefix: 'assets/');
+  // AudioCache audioPaused = AudioCache(prefix: 'assets/');
   String direction = 'right';
   String ghostLast = 'left';
   String ghostLast2 = 'left';
@@ -111,7 +109,7 @@ class _HomePageState extends State<HomePage> {
       advancedPlayer = AudioPlayer();
       // audioInGame = AudioCache(fixedPlayer: advancedPlayer);
       // audioPaused = AudioCache(fixedPlayer: advancedPlayer2);
-      audioInGame.load('pacman_beginning.wav');
+      // audioInGame.load('pacman_beginning.wav');
       preGame = false;
       getFood();
 
@@ -122,7 +120,7 @@ class _HomePageState extends State<HomePage> {
         }
         if (player == ghost1 || player == ghost2 || player == ghost3) {
           advancedPlayer.stop();
-          audioDeath.load('pacman_death.wav');
+          // audioDeath.load('pacman_death.wav');
           setState(() {
             player = -1;
           });
@@ -138,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                   actions: [
                     ElevatedButton(
                       onPressed: () {
-                        audioInGame.load('pacman_beginning.wav');
+                        // audioInGame.load('pacman_beginning.wav');
                         setState(() {
                           player = numberInRow * 14 + 1;
                           ghost1 = numberInRow * 2 - 2;
