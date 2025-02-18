@@ -1,11 +1,17 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ffi';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:pacman/constaints.dart';
 import 'package:pacman/ghost.dart';
+import 'package:pacman/ghost2.dart';
+import 'package:pacman/ghost3.dart';
+import 'package:pacman/path.dart';
 import 'package:pacman/pixel.dart';
 import 'package:pacman/player.dart';
+import 'package:flutter/rendering.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,71 +28,46 @@ class _HomePageState extends State<HomePage> {
   int ghost2 = numberInRow * 9 - 1;
   int ghost3 = numberInRow * 11 - 2;
   List<int> food = [];
-  // bool preGame = true;
+  bool preGame = true;
   bool isMouthClosed = false;
   static bool reset = false;
   int score = 0;
+  var controller;
   bool isPaused = false;
-  // AudioPlayer advancedPlayer = AudioPlayer();
-  // AudioPlayer advancedPlayer2 = AudioPlayer();
-  // AudioCache audioInGame = AudioCache(prefix: 'assets/');
-  // AudioCache audioManch = AudioCache(prefix: 'assets/');
-  // AudioCache audioDeath = AudioCache(prefix: 'assets/');
-  // AudioCache audioPaused = AudioCache(prefix: 'assets/');
+  AudioPlayer advancedPlayer = AudioPlayer();
+  AudioPlayer advancedPlayer2 = AudioPlayer();
+  AudioCache audioInGame = AudioCache(prefix: 'assets/');
+  AudioCache audioManch = AudioCache(prefix: 'assets/');
+  AudioCache audioDeath = AudioCache(prefix: 'assets/');
+  AudioCache audioPaused = AudioCache(prefix: 'assets/');
   String direction = 'right';
-  // String ghostLast = 'left';
-  // String ghostLast2 = 'left';
-  // String ghostLast3 = 'down';
+  String ghostLast = 'left';
+  String ghostLast2 = 'left';
+  String ghostLast3 = 'down';
 
-  void resetGame() {
-    setState(() {
-      reset = true;
-      player = numberInRow * 15 + 1;
-      food.clear();
-      direction = 'right';
-      score = 0;
-    });
+  // void resetGame() {
+  //   setState(() {
+  //     reset = true;
+  //     player = numberInRow * 15 + 1;
+  //     food.clear();
+  //     direction = 'right';
+  //     score = 0;
+  //   });
 
-    Future.delayed(
-        const Duration(
-          seconds: 2,
-        ), () {
-      reset = false;
-    });
-  }
+  //   Future.delayed(
+  //       const Duration(
+  //         seconds: 2,
+  //       ), () {
+  //     reset = false;
+  //   });
+  // }
 
-  void startGame() {
-    getFood();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (reset) {
-        timer.cancel();
-      }
-      if (food.contains(player)) {
-        food.remove(player);
-        score++;
-      }
-
-      if (timer.isActive) {
-        switch (direction) {
-          case 'left':
-            moveLeft();
-            break;
-          case 'right':
-            moveRight();
-            break;
-          case 'up':
-            moveUp();
-            break;
-          case 'down':
-            moveDown();
-            break;
-        }
-      }
-    });
+  void restart() {
+    startGame();
   }
 
   void getFood() {
-    for (var i = 0; i < numberOfSquares; i++) {
+    for (int i = 0; i < numberOfSquares; i++) {
       if (!Constains.barriers.contains(i)) {
         food.add(i);
       }
@@ -94,36 +75,493 @@ class _HomePageState extends State<HomePage> {
   }
 
   void moveLeft() {
-    setState(() {
-      if (!Constains.barriers.contains(player - 1)) {
+    if (!Constains.barriers.contains(player - 1)) {
+      setState(() {
         player--;
-      }
-    });
+      });
+    }
   }
 
   void moveRight() {
-    setState(() {
-      if (!Constains.barriers.contains(player + 1)) {
+    if (!Constains.barriers.contains(player + 1)) {
+      setState(() {
         player++;
-      }
-    });
+      });
+    }
   }
 
   void moveUp() {
-    setState(() {
-      if (!Constains.barriers.contains(player - numberInRow)) {
+    if (!Constains.barriers.contains(player - numberInRow)) {
+      setState(() {
         player -= numberInRow;
-      }
-    });
+      });
+    }
   }
 
   void moveDown() {
-    setState(() {
-      if (!Constains.barriers.contains(player + numberInRow)) {
+    if (!Constains.barriers.contains(player + numberInRow)) {
+      setState(() {
         player += numberInRow;
-      }
-    });
+      });
+    }
   }
+
+  void startGame() {
+    if (preGame) {
+      advancedPlayer = AudioPlayer();
+      // audioInGame = AudioCache(fixedPlayer: advancedPlayer);
+      // audioPaused = AudioCache(fixedPlayer: advancedPlayer2);
+      audioInGame.load('pacman_beginning.wav');
+      preGame = false;
+      getFood();
+
+      Timer.periodic(const Duration(milliseconds: 10), (timer) {
+        if (isPaused) {
+        } else {
+          advancedPlayer.resume();
+        }
+        if (player == ghost1 || player == ghost2 || player == ghost3) {
+          advancedPlayer.stop();
+          audioDeath.load('pacman_death.wav');
+          setState(() {
+            player = -1;
+          });
+          showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Center(
+                    child: Text("Game Over!"),
+                  ),
+                  content: Text("Your Score : " + (score).toString()),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () {
+                        audioInGame.load('pacman_beginning.wav');
+                        setState(() {
+                          player = numberInRow * 14 + 1;
+                          ghost1 = numberInRow * 2 - 2;
+                          ghost2 = numberInRow * 9 - 1;
+                          ghost3 = numberInRow * 11 - 2;
+                          isPaused = false;
+                          preGame = false;
+                          isMouthClosed = false;
+                          direction = "right";
+                          food.clear();
+                          getFood();
+                          score = 0;
+                          Navigator.pop(context);
+                        });
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          Colors.white,
+                        ),
+                      ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: <Color>[
+                              Color(0xFF0D47A1),
+                              Color(0xFF1976D2),
+                              Color(0xFF42A5F5),
+                            ],
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(10.0),
+                        child: const Text('Restart'),
+                      ),
+                    )
+                  ],
+                );
+              });
+        }
+      });
+      Timer.periodic(const Duration(milliseconds: 190), (timer) {
+        if (!isPaused) {
+          moveGhost();
+          moveGhost2();
+          moveGhost3();
+        }
+      });
+      Timer.periodic(const Duration(milliseconds: 170), (timer) {
+        setState(() {
+          isMouthClosed = !isMouthClosed;
+        });
+        if (food.contains(player)) {
+          // audioMunch.play('pacman_chomp.wav');
+          setState(() {
+            food.remove(player);
+          });
+          score++;
+        }
+        switch (direction) {
+          case "left":
+            if (!isPaused) moveLeft();
+            break;
+          case "right":
+            if (!isPaused) moveRight();
+            break;
+          case "up":
+            if (!isPaused) moveUp();
+            break;
+          case "down":
+            if (!isPaused) moveDown();
+            break;
+        }
+      });
+    }
+  }
+
+  void moveGhost() {
+    switch (ghostLast) {
+      case "left":
+        if (!Constains.barriers.contains(ghost1 - 1)) {
+          setState(() {
+            ghost1--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost1 + 1)) {
+          setState(() {
+            ghost1++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+          setState(() {
+            ghost1 -= numberInRow;
+            ghostLast = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+          setState(() {
+            ghost1 += numberInRow;
+            ghostLast = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
+
+  void moveGhost2() {
+    switch (ghostLast2) {
+      case "left":
+        if (!Constains.barriers.contains(ghost2 - 1)) {
+          setState(() {
+            ghost2--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost2 + 1)) {
+          setState(() {
+            ghost2++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+          setState(() {
+            ghost2 -= numberInRow;
+            ghostLast2 = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+          setState(() {
+            ghost2 += numberInRow;
+            ghostLast2 = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
+
+  void moveGhost3() {
+    switch (ghostLast) {
+      case "left":
+        if (!Constains.barriers.contains(ghost3 - 1)) {
+          setState(() {
+            ghost3--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost3 + 1)) {
+          setState(() {
+            ghost3++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+          setState(() {
+            ghost3 -= numberInRow;
+            ghostLast3 = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+          setState(() {
+            ghost3 += numberInRow;
+            ghostLast3 = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
+
+  // void getFood() {
+  //   for (var i = 0; i < numberOfSquares; i++) {
+  //     if (!Constains.barriers.contains(i)) {
+  //       food.add(i);
+  //     }
+  //   }
+  // }
+
+  // void moveLeft() {
+  //   setState(() {
+  //     if (!Constains.barriers.contains(player - 1)) {
+  //       player--;
+  //     }
+  //   });
+  // }
+
+  // void moveRight() {
+  //   setState(() {
+  //     if (!Constains.barriers.contains(player + 1)) {
+  //       player++;
+  //     }
+  //   });
+  // }
+
+  // void moveUp() {
+  //   setState(() {
+  //     if (!Constains.barriers.contains(player - numberInRow)) {
+  //       player -= numberInRow;
+  //     }
+  //   });
+  // }
+
+  // void moveDown() {
+  //   setState(() {
+  //     if (!Constains.barriers.contains(player + numberInRow)) {
+  //       player += numberInRow;
+  //     }
+  //   });
+  // }
 
   // @override
   // void initState() {
@@ -206,21 +644,27 @@ class _HomePageState extends State<HomePage> {
                   // }
                   if (ghost1 == index) {
                     return const Ghost();
-                  } else if(ghost2 == index){
-                    return const Ghost();
-                  } else if(ghost3 == index){
-                    return const Ghost();
+                  } else if (ghost2 == index) {
+                    return const Ghost2();
+                  } else if (ghost3 == index) {
+                    return const Ghost3();
                   } else if (Constains.barriers.contains(index)) {
                     return Pixel(
                       innerColor: Colors.blue[900],
                       outerColor: Colors.blue[800],
                     );
-                  } else {
+                  } else if (preGame || food.contains(index)) {
+                      return const MyPath(
+                        innerColor: Colors.yellow,
+                        outerColor: Colors.black,
+                        // child: Text(index.toString()),
+                      );
+                    } else {
                     return const Pixel(
                       innerColor: Colors.black,
                       outerColor: Colors.black,
                     );
-                  }
+                  } 
                 },
               ),
             ),
