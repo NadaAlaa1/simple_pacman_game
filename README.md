@@ -7,6 +7,12 @@ A modern implementation of the classic Pac-Man game built with Flutter. Navigate
 
 ![Game Screenshot](assets/images/screenshot.png)
 
+## Demo
+
+<div align="center">
+  <img src="assets/demo.gif" alt="Pacman Demo">
+</div>
+
 ## Features 🚀
 
 - **Classic Pac-Man gameplay mechanics**
