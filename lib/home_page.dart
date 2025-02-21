@@ -28,37 +28,14 @@ class _HomePageState extends State<HomePage> {
   List<int> food = [];
   bool preGame = true;
   bool isMouthClosed = false;
-  // static bool reset = false;
   int score = 0;
-  // var controller;
   bool isPaused = false;
   AudioPlayer advancedPlayer = AudioPlayer();
   AudioPlayer advancedPlayer2 = AudioPlayer();
-  // AudioCache audioInGame = AudioCache(prefix: 'assets/');
-  // AudioCache audioManch = AudioCache(prefix: 'assets/');
-  // AudioCache audioDeath = AudioCache(prefix: 'assets/');
-  // AudioCache audioPaused = AudioCache(prefix: 'assets/');
   String direction = 'right';
   String ghostLast = 'left';
   String ghostLast2 = 'left';
   String ghostLast3 = 'down';
-
-  // void resetGame() {
-  //   setState(() {
-  //     reset = true;
-  //     player = numberInRow * 15 + 1;
-  //     food.clear();
-  //     direction = 'right';
-  //     score = 0;
-  //   });
-
-  //   Future.delayed(
-  //       const Duration(
-  //         seconds: 2,
-  //       ), () {
-  //     reset = false;
-  //   });
-  // }
 
   void restart() {
     startGame();
@@ -106,21 +83,11 @@ class _HomePageState extends State<HomePage> {
 
   void startGame() {
     if (preGame) {
-      advancedPlayer = AudioPlayer();
-      // audioInGame = AudioCache(fixedPlayer: advancedPlayer);
-      // audioPaused = AudioCache(fixedPlayer: advancedPlayer2);
-      // audioInGame.load('pacman_beginning.wav');
       preGame = false;
       getFood();
 
       Timer.periodic(const Duration(milliseconds: 10), (timer) {
-        if (isPaused) {
-        } else {
-          advancedPlayer.resume();
-        }
         if (player == ghost1 || player == ghost2 || player == ghost3) {
-          advancedPlayer.stop();
-          // audioDeath.load('pacman_death.wav');
           setState(() {
             player = -1;
           });
@@ -129,14 +96,11 @@ class _HomePageState extends State<HomePage> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: const Center(
-                    child: Text("Game Over!"),
-                  ),
-                  content: Text("Your Score : " + (score).toString()),
+                  title: const Center(child: Text("Game Over!")),
+                  content: Text("Your Score : ${score.toString()}"),
                   actions: [
                     ElevatedButton(
                       onPressed: () {
-                        // audioInGame.load('pacman_beginning.wav');
                         setState(() {
                           player = numberInRow * 14 + 1;
                           ghost1 = numberInRow * 2 - 2;
@@ -152,62 +116,45 @@ class _HomePageState extends State<HomePage> {
                           Navigator.pop(context);
                         });
                       },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          Colors.white,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: <Color>[
-                              Color(0xFF0D47A1),
-                              Color(0xFF1976D2),
-                              Color(0xFF42A5F5),
-                            ],
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(10.0),
-                        child: const Text('Restart'),
-                      ),
+                      child: const Text('Restart'),
                     )
                   ],
                 );
               });
         }
       });
-      Timer.periodic(const Duration(milliseconds: 190), (timer) {
+
+      Timer.periodic(const Duration(milliseconds: 600), (timer) {
         if (!isPaused) {
           moveGhost();
           moveGhost2();
           moveGhost3();
         }
       });
+
       Timer.periodic(const Duration(milliseconds: 170), (timer) {
-        setState(() {
-          isMouthClosed = !isMouthClosed;
-        });
+        if (!isPaused) {
+          switch (direction) {
+            case "left":
+              moveLeft();
+              break;
+            case "right":
+              moveRight();
+              break;
+            case "up":
+              moveUp();
+              break;
+            case "down":
+              moveDown();
+              break;
+          }
+        }
         if (food.contains(player)) {
-          // audioMunch.play('pacman_chomp.wav');
-          setState(() {
-            food.remove(player);
-          });
+          setState(() => food.remove(player));
           score++;
         }
-        switch (direction) {
-          case "left":
-            if (!isPaused) moveLeft();
-            break;
-          case "right":
-            if (!isPaused) moveRight();
-            break;
-          case "up":
-            if (!isPaused) moveUp();
-            break;
-          case "down":
-            if (!isPaused) moveDown();
-            break;
-        }
+        setState(() => isMouthClosed = !isMouthClosed);
+        
       });
     }
   }
@@ -419,7 +366,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void moveGhost3() {
-    switch (ghostLast) {
+    switch (ghostLast3) {
       case "left":
         if (!Constains.barriers.contains(ghost3 - 1)) {
           setState(() {
@@ -521,52 +468,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // void getFood() {
-  //   for (var i = 0; i < numberOfSquares; i++) {
-  //     if (!Constains.barriers.contains(i)) {
-  //       food.add(i);
-  //     }
-  //   }
-  // }
-
-  // void moveLeft() {
-  //   setState(() {
-  //     if (!Constains.barriers.contains(player - 1)) {
-  //       player--;
-  //     }
-  //   });
-  // }
-
-  // void moveRight() {
-  //   setState(() {
-  //     if (!Constains.barriers.contains(player + 1)) {
-  //       player++;
-  //     }
-  //   });
-  // }
-
-  // void moveUp() {
-  //   setState(() {
-  //     if (!Constains.barriers.contains(player - numberInRow)) {
-  //       player -= numberInRow;
-  //     }
-  //   });
-  // }
-
-  // void moveDown() {
-  //   setState(() {
-  //     if (!Constains.barriers.contains(player + numberInRow)) {
-  //       player += numberInRow;
-  //     }
-  //   });
-  // }
-
-  // @override
-  // void initState() {
-  //   getFood();
-  //   super.initState();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -635,11 +536,6 @@ class _HomePageState extends State<HomePage> {
                         return const MyPlayer();
                     }
                   }
-                  //else if(ghost1 == index){
-                  //   return const Ghost1();
-                  // } else if(ghost2 == index){
-                  //   return const Ghost2();
-                  // }
                   if (ghost1 == index) {
                     return const Ghost();
                   } else if (ghost2 == index) {
@@ -651,18 +547,17 @@ class _HomePageState extends State<HomePage> {
                       innerColor: Colors.blue[900],
                       outerColor: Colors.blue[800],
                     );
-                  } else if (preGame || food.contains(index)) {
-                      return const MyPath(
-                        innerColor: Colors.yellow,
-                        outerColor: Colors.black,
-                        // child: Text(index.toString()),
-                      );
-                    } else {
+                  } else if (food.contains(index)) {
+                    return const MyPath(
+                      innerColor: Colors.yellow,
+                      outerColor: Colors.black,
+                    );
+                  } else {
                     return const Pixel(
                       innerColor: Colors.black,
                       outerColor: Colors.black,
                     );
-                  } 
+                  }
                 },
               ),
             ),
