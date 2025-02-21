@@ -34,8 +34,8 @@ A modern implementation of the classic Pac-Man game built with Flutter. Navigate
 
 2. **Clone the repository**
    ```bash
-   git clone https://github.com/NadaAlaa1/pacman.git
-   cd pacman-flutter
+   git clone https://github.com/NadaAlaa1/simple_pacman_game.git
+   cd pacman
 
 3. **Install dependencies**
    ```bash
