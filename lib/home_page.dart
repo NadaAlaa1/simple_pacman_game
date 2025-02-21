@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage> {
         }
       });
 
-      Timer.periodic(const Duration(milliseconds: 600), (timer) {
+      Timer.periodic(const Duration(milliseconds: 500), (timer) {
         if (!isPaused) {
           moveGhost();
           moveGhost2();
