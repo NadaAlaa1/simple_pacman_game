@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:pacman/constaints.dart';
 import 'package:pacman/ghost.dart';
+import 'package:pacman/ghost2.dart';
+import 'package:pacman/ghost3.dart';
+import 'package:pacman/path.dart';
 import 'package:pacman/pixel.dart';
 import 'package:pacman/player.dart';
 
@@ -22,71 +26,23 @@ class _HomePageState extends State<HomePage> {
   int ghost2 = numberInRow * 9 - 1;
   int ghost3 = numberInRow * 11 - 2;
   List<int> food = [];
-  // bool preGame = true;
+  bool preGame = true;
   bool isMouthClosed = false;
-  static bool reset = false;
   int score = 0;
   bool isPaused = false;
-  // AudioPlayer advancedPlayer = AudioPlayer();
-  // AudioPlayer advancedPlayer2 = AudioPlayer();
-  // AudioCache audioInGame = AudioCache(prefix: 'assets/');
-  // AudioCache audioManch = AudioCache(prefix: 'assets/');
-  // AudioCache audioDeath = AudioCache(prefix: 'assets/');
-  // AudioCache audioPaused = AudioCache(prefix: 'assets/');
+  AudioPlayer advancedPlayer = AudioPlayer();
+  AudioPlayer advancedPlayer2 = AudioPlayer();
   String direction = 'right';
-  // String ghostLast = 'left';
-  // String ghostLast2 = 'left';
-  // String ghostLast3 = 'down';
+  String ghostLast = 'left';
+  String ghostLast2 = 'left';
+  String ghostLast3 = 'down';
 
-  void resetGame() {
-    setState(() {
-      reset = true;
-      player = numberInRow * 15 + 1;
-      food.clear();
-      direction = 'right';
-      score = 0;
-    });
-
-    Future.delayed(
-        const Duration(
-          seconds: 2,
-        ), () {
-      reset = false;
-    });
-  }
-
-  void startGame() {
-    getFood();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (reset) {
-        timer.cancel();
-      }
-      if (food.contains(player)) {
-        food.remove(player);
-        score++;
-      }
-
-      if (timer.isActive) {
-        switch (direction) {
-          case 'left':
-            moveLeft();
-            break;
-          case 'right':
-            moveRight();
-            break;
-          case 'up':
-            moveUp();
-            break;
-          case 'down':
-            moveDown();
-            break;
-        }
-      }
-    });
+  void restart() {
+    startGame();
   }
 
   void getFood() {
-    for (var i = 0; i < numberOfSquares; i++) {
+    for (int i = 0; i < numberOfSquares; i++) {
       if (!Constains.barriers.contains(i)) {
         food.add(i);
       }
@@ -94,42 +50,423 @@ class _HomePageState extends State<HomePage> {
   }
 
   void moveLeft() {
-    setState(() {
-      if (!Constains.barriers.contains(player - 1)) {
+    if (!Constains.barriers.contains(player - 1)) {
+      setState(() {
         player--;
-      }
-    });
+      });
+    }
   }
 
   void moveRight() {
-    setState(() {
-      if (!Constains.barriers.contains(player + 1)) {
+    if (!Constains.barriers.contains(player + 1)) {
+      setState(() {
         player++;
-      }
-    });
+      });
+    }
   }
 
   void moveUp() {
-    setState(() {
-      if (!Constains.barriers.contains(player - numberInRow)) {
+    if (!Constains.barriers.contains(player - numberInRow)) {
+      setState(() {
         player -= numberInRow;
-      }
-    });
+      });
+    }
   }
 
   void moveDown() {
-    setState(() {
-      if (!Constains.barriers.contains(player + numberInRow)) {
+    if (!Constains.barriers.contains(player + numberInRow)) {
+      setState(() {
         player += numberInRow;
-      }
-    });
+      });
+    }
   }
 
-  // @override
-  // void initState() {
-  //   getFood();
-  //   super.initState();
-  // }
+  void startGame() {
+    if (preGame) {
+      preGame = false;
+      getFood();
+
+      Timer.periodic(const Duration(milliseconds: 10), (timer) {
+        if (player == ghost1 || player == ghost2 || player == ghost3) {
+          setState(() {
+            player = -1;
+          });
+          showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Center(child: Text("Game Over!")),
+                  content: Text("Your Score : ${score.toString()}"),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          player = numberInRow * 14 + 1;
+                          ghost1 = numberInRow * 2 - 2;
+                          ghost2 = numberInRow * 9 - 1;
+                          ghost3 = numberInRow * 11 - 2;
+                          isPaused = false;
+                          preGame = false;
+                          isMouthClosed = false;
+                          direction = "right";
+                          food.clear();
+                          getFood();
+                          score = 0;
+                          Navigator.pop(context);
+                        });
+                      },
+                      child: const Text('Restart'),
+                    )
+                  ],
+                );
+              });
+        }
+      });
+
+      Timer.periodic(const Duration(milliseconds: 600), (timer) {
+        if (!isPaused) {
+          moveGhost();
+          moveGhost2();
+          moveGhost3();
+        }
+      });
+
+      Timer.periodic(const Duration(milliseconds: 170), (timer) {
+        if (!isPaused) {
+          switch (direction) {
+            case "left":
+              moveLeft();
+              break;
+            case "right":
+              moveRight();
+              break;
+            case "up":
+              moveUp();
+              break;
+            case "down":
+              moveDown();
+              break;
+          }
+        }
+        if (food.contains(player)) {
+          setState(() => food.remove(player));
+          score++;
+        }
+        setState(() => isMouthClosed = !isMouthClosed);
+        
+      });
+    }
+  }
+
+  void moveGhost() {
+    switch (ghostLast) {
+      case "left":
+        if (!Constains.barriers.contains(ghost1 - 1)) {
+          setState(() {
+            ghost1--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost1 + 1)) {
+          setState(() {
+            ghost1++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+          setState(() {
+            ghost1 -= numberInRow;
+            ghostLast = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+            setState(() {
+              ghost1 += numberInRow;
+              ghostLast = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost1 + numberInRow)) {
+          setState(() {
+            ghost1 += numberInRow;
+            ghostLast = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost1 - 1)) {
+            setState(() {
+              ghost1--;
+              ghostLast = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost1 + 1)) {
+            setState(() {
+              ghost1++;
+              ghostLast = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost1 - numberInRow)) {
+            setState(() {
+              ghost1 -= numberInRow;
+              ghostLast = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
+
+  void moveGhost2() {
+    switch (ghostLast2) {
+      case "left":
+        if (!Constains.barriers.contains(ghost2 - 1)) {
+          setState(() {
+            ghost2--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost2 + 1)) {
+          setState(() {
+            ghost2++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+          setState(() {
+            ghost2 -= numberInRow;
+            ghostLast2 = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+            setState(() {
+              ghost2 += numberInRow;
+              ghostLast2 = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost2 + numberInRow)) {
+          setState(() {
+            ghost2 += numberInRow;
+            ghostLast2 = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost2 - 1)) {
+            setState(() {
+              ghost2--;
+              ghostLast2 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost2 + 1)) {
+            setState(() {
+              ghost2++;
+              ghostLast2 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost2 - numberInRow)) {
+            setState(() {
+              ghost2 -= numberInRow;
+              ghostLast2 = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
+
+  void moveGhost3() {
+    switch (ghostLast3) {
+      case "left":
+        if (!Constains.barriers.contains(ghost3 - 1)) {
+          setState(() {
+            ghost3--;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          }
+        }
+        break;
+      case "right":
+        if (!Constains.barriers.contains(ghost3 + 1)) {
+          setState(() {
+            ghost3++;
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          }
+        }
+        break;
+      case "up":
+        if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+          setState(() {
+            ghost3 -= numberInRow;
+            ghostLast3 = "up";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+            setState(() {
+              ghost3 += numberInRow;
+              ghostLast3 = "down";
+            });
+          }
+        }
+        break;
+      case "down":
+        if (!Constains.barriers.contains(ghost3 + numberInRow)) {
+          setState(() {
+            ghost3 += numberInRow;
+            ghostLast3 = "down";
+          });
+        } else {
+          if (!Constains.barriers.contains(ghost3 - 1)) {
+            setState(() {
+              ghost3--;
+              ghostLast3 = "left";
+            });
+          } else if (!Constains.barriers.contains(ghost3 + 1)) {
+            setState(() {
+              ghost3++;
+              ghostLast3 = "right";
+            });
+          } else if (!Constains.barriers.contains(ghost3 - numberInRow)) {
+            setState(() {
+              ghost3 -= numberInRow;
+              ghostLast3 = "up";
+            });
+          }
+        }
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,21 +536,21 @@ class _HomePageState extends State<HomePage> {
                         return const MyPlayer();
                     }
                   }
-                  //else if(ghost1 == index){
-                  //   return const Ghost1();
-                  // } else if(ghost2 == index){
-                  //   return const Ghost2();
-                  // }
                   if (ghost1 == index) {
                     return const Ghost();
-                  } else if(ghost2 == index){
-                    return const Ghost();
-                  } else if(ghost3 == index){
-                    return const Ghost();
+                  } else if (ghost2 == index) {
+                    return const Ghost2();
+                  } else if (ghost3 == index) {
+                    return const Ghost3();
                   } else if (Constains.barriers.contains(index)) {
                     return Pixel(
                       innerColor: Colors.blue[900],
                       outerColor: Colors.blue[800],
+                    );
+                  } else if (food.contains(index)) {
+                    return const MyPath(
+                      innerColor: Colors.yellow,
+                      outerColor: Colors.black,
                     );
                   } else {
                     return const Pixel(
